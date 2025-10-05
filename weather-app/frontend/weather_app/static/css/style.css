@@ -1,0 +1,38 @@
+
+
+:root{
+  --bg:#0f1113;
+  --panel:#17191b;
+  --muted:#9aa0a6;
+  --accent:#d33;
+  --text:#e8e8e8;
+}
+body.dark-bg{
+  background:var(--bg);
+  color:var(--text);
+  font-family: Inter, Arial, sans-serif;
+  margin:0;
+}
+.topbar{
+  display:flex;
+  gap:20px;
+  align-items:center;
+  padding:16px 24px;
+  background:#0b0c0d;
+  border-bottom:1px solid #222;
+}
+.brand{ font-weight:700; }
+.search input{
+  padding:8px; background:#111; border:1px solid #222; color:var(--text);
+}
+.container{ display:flex; gap:24px; padding:24px; }
+.main-card{ background:var(--panel); padding:20px; border-radius:6px; flex:1; }
+.alert-banner{ background: #b71c1c; color:white; padding:10px; border-radius:4px; margin-bottom:12px; }
+.today{ display:flex; justify-content:space-between; }
+.left{ display:flex; gap:12px; align-items:center; }
+.icon img{ width:96px; height:96px; }
+.temp{ font-size:48px; font-weight:700; }
+.right .desc{ font-size:20px; margin:0 0 8px 0; color:var(--muted); }
+.details{ display:flex; gap:12px; color:var(--muted); }
+.sidebar{ width:320px; }
+.card{ background:#151617; padding:12px; border-radius:6px; color:var(--muted); }

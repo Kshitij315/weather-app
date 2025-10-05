@@ -1,0 +1,29 @@
+# Virtualenv
+weather-app/.venv/
+.venv/
+venv/
+ENV/
+env/
+
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+*.sqlite3
+/media/
+staticfiles/
+
+# Environment / secrets
+.env
+.env.*.local
+secrets.json
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

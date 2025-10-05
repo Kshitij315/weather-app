@@ -1,0 +1,56 @@
+
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Weather App</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="dark-bg">
+  <header class="topbar">
+    <div class="brand">MyWeather</div>
+    <div class="location">{{ weather.city }}</div>
+    <form method="get" class="search">
+      <input name="city" value="{{ city_query }}" placeholder="Address, City or Zip Code" />
+      <button type="submit">Search</button>
+    </form>
+  </header>
+
+  <main class="container">
+    <section class="main-card">
+      <div class="alert-banner">Yellow Watch for Heavy Rainfall</div>
+
+      <div class="today">
+        <div class="left">
+          <div class="icon">
+            <!-- Use OpenWeather icons or your custom set -->
+            <img src="http://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" alt="">
+          </div>
+          <div class="temp">{{ weather.temp }}°C</div>
+          <div class="small">/Feels {{ weather.feels_like }}°C</div>
+        </div>
+        <div class="right">
+          <h3 class="desc">{{ weather.desc }}</h3>
+
+          <div class="details">
+            <div>RealFeel: {{ weather.feels_like }}°</div>
+            <div>Humidity: {{ weather.humidity }}%</div>
+            <div>Wind: {{ weather.wind }} m/s</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="card">Top Stories
+        <ul>
+          <li>Winter forecast 2025-26...</li>
+          <li>What's next after Imelda?</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>
