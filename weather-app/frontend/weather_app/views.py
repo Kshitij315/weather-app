@@ -35,3 +35,37 @@ def index(request):
 from django.shortcuts import render
 
 # Create your views here.
+
+
+# # frontend/weather_app/views.py
+# import requests
+# from django.shortcuts import render
+# from django.conf import settings
+
+# FASTAPI_URL = getattr(settings, "FASTAPI_URL", "http://127.0.0.1:8000")
+
+# def index(request):
+#     city = request.GET.get("city", "Thane")
+#     params = {"city": city, "limit": 10}
+#     weather = {}
+#     try:
+#         r = requests.get(f"{FASTAPI_URL}/api/weather", params=params, timeout=10)
+#         r.raise_for_status()
+#         weather = r.json()
+#     except Exception as e:
+#         weather = {"error": "Could not fetch weather data from backend.", "details": str(e)}
+
+#     context = {
+#         "weather": weather,
+#         "city_query": city,
+#     }
+
+#     return render(request, "index.html", context)
+
+# app/views.py
+from django.shortcuts import render
+from django.conf import settings
+
+def index(request):
+    # pass key to template (it's stored in your settings.py already per your message)
+    return render(request, "index.html", {"OPENWEATHER_API_KEY": getattr(settings, "OPENWEATHER_API_KEY", "")})

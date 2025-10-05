@@ -1,56 +1,148 @@
-
 {% load static %}
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <title>Weather App</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8">
+  <title>MyWeather Dashboard</title>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    /* small overrides for the dashboard */
+    .weather-card { background:#191919; color:#eee; padding:20px; border-radius:8px; }
+    .alert-banner { background:#9d1b1b; color:white; padding:10px; border-radius:6px; margin-bottom:12px; display:none;}
+    #map { height: 300px; border-radius:8px; }
+  </style>
 </head>
-<body class="dark-bg">
-  <header class="topbar">
-    <div class="brand">MyWeather</div>
-    <div class="location">{{ weather.city }}</div>
-    <form method="get" class="search">
-      <input name="city" value="{{ city_query }}" placeholder="Address, City or Zip Code" />
-      <button type="submit">Search</button>
-    </form>
-  </header>
+<body>
+  <div class="container">
+    <div id="alert" class="alert-banner"></div>
 
-  <main class="container">
-    <section class="main-card">
-      <div class="alert-banner">Yellow Watch for Heavy Rainfall</div>
-
-      <div class="today">
-        <div class="left">
-          <div class="icon">
-            <!-- Use OpenWeather icons or your custom set -->
-            <img src="http://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" alt="">
-          </div>
-          <div class="temp">{{ weather.temp }}°C</div>
-          <div class="small">/Feels {{ weather.feels_like }}°C</div>
+    <div class="weather-card">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <h2 id="city">--</h2>
+          <div class="stat"><span id="temp">--</span>°C <small id="feels">/Feels --°C</small></div>
+          <div class="stat">Humidity: <span id="humidity">--</span>% | Wind: <span id="wind">--</span> m/s</div>
         </div>
-        <div class="right">
-          <h3 class="desc">{{ weather.desc }}</h3>
-
-          <div class="details">
-            <div>RealFeel: {{ weather.feels_like }}°</div>
-            <div>Humidity: {{ weather.humidity }}%</div>
-            <div>Wind: {{ weather.wind }} m/s</div>
-          </div>
+        <div style="width:420px;">
+          <canvas id="tempChart" width="420" height="220"></canvas>
         </div>
       </div>
-    </section>
+    </div>
 
-    <aside class="sidebar">
-      <div class="card">Top Stories
-        <ul>
-          <li>Winter forecast 2025-26...</li>
-          <li>What's next after Imelda?</li>
-        </ul>
+    <div style="display:flex; gap:20px; margin-top:16px;">
+      <div style="flex:1">
+        <h4>Precipitation (last 7 days)</h4>
+        <canvas id="rainChart"></canvas>
       </div>
-    </aside>
-  </main>
+      <div style="width:420px">
+        <h4>Map</h4>
+        <div id="map"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- libs (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+  // Set to your FastAPI base (uvicorn default)
+  const FASTAPI_BASE = "http://localhost:8000";
+  const CITY = "Thane,IN";
+  async function fetchCurrent() {
+    const res = await fetch(`${FASTAPI_BASE}/api/weather/current?city=${encodeURIComponent(CITY)}`);
+    if (!res.ok) throw new Error("Failed to fetch current");
+    return res.json();
+  }
+  async function fetchHistory() {
+    const res = await fetch(`${FASTAPI_BASE}/api/weather/history?city=${encodeURIComponent(CITY)}&hours=168`);
+    return res.ok ? res.json() : [];
+  }
+  async function fetchNasaRain(lat, lon){
+    const res = await fetch(`${FASTAPI_BASE}/api/nasa/rainfall?lat=${lat}&lon=${lon}`);
+    return res.ok ? res.json() : {series:[]};
+  }
+
+  let tempChart, rainChart, map, marker, precipLayer;
+
+  function createCharts(tempLabels=[], tempData=[], rainLabels=[], rainData=[]){
+    const tctx = document.getElementById("tempChart").getContext("2d");
+    if (tempChart) tempChart.destroy();
+    tempChart = new Chart(tctx, {
+      type: "line",
+      data: { labels: tempLabels, datasets: [{ label: "Temp (°C)", data: tempData, fill:true, tension:0.3 }]},
+      options: { scales: { y: { beginAtZero: false } } }
+    });
+
+    const rctx = document.getElementById("rainChart").getContext("2d");
+    if (rainChart) rainChart.destroy();
+    rainChart = new Chart(rctx, {
+      type: "bar",
+      data: { labels: rainLabels, datasets: [{ label: "Rain (mm)", data: rainData }]},
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+  }
+
+  function createMap(lat, lon, openWeatherApiKey){
+    if (!map) {
+      map = L.map('map').setView([lat, lon], 10);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+      marker = L.marker([lat, lon]).addTo(map);
+      if (openWeatherApiKey) {
+        const tileUrl = `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${openWeatherApiKey}`;
+        precipLayer = L.tileLayer(tileUrl, { opacity: 0.6 });
+        precipLayer.addTo(map);
+      }
+    } else {
+      map.setView([lat, lon], 10);
+      marker.setLatLng([lat, lon]);
+    }
+  }
+
+  function showAlert(message){
+    const el = document.getElementById("alert");
+    el.innerText = message;
+    el.style.display = "block";
+  }
+  function hideAlert(){ document.getElementById("alert").style.display = "none"; }
+
+  async function initDashboard(){
+    try {
+      const cw = await fetchCurrent();
+      document.getElementById("city").innerText = cw.city;
+      document.getElementById("temp").innerText = Math.round(cw.temp_c);
+      document.getElementById("feels").innerText = "/Feels " + Math.round(cw.feels_like_c) + "°C";
+      document.getElementById("humidity").innerText = cw.humidity;
+      document.getElementById("wind").innerText = cw.wind_ms;
+
+      if (cw.rain_1h && cw.rain_1h > 10) {
+        showAlert("Yellow Watch for Heavy Rainfall");
+      } else {
+        hideAlert();
+      }
+
+      const history = await fetchHistory();
+      const tempLabels = history.map(h => new Date(h.recorded_at).toLocaleString());
+      const tempData = history.map(h => h.temp_c);
+
+      const nasa = await fetchNasaRain(cw.lat, cw.lon);
+      const rainLabels = nasa.series.map(s => s.date);
+      const rainData = nasa.series.map(s => s.rain_mm);
+
+      createCharts(tempLabels, tempData, rainLabels, rainData);
+
+      // PASS OPENWEATHER KEY from Django view context variable
+      const OPENWEATHER_KEY = "{{ OPENWEATHER_API_KEY|default:'' }}";
+      const key = OPENWEATHER_KEY || prompt("Paste your OpenWeather API key to enable precipitation overlay");
+      createMap(cw.lat, cw.lon, key || "");
+    } catch (err) {
+      console.error(err);
+      alert("Error initialising dashboard: " + (err.message || err));
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", initDashboard);
+  </script>
 </body>
 </html>

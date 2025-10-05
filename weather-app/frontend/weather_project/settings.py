@@ -13,9 +13,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 
 import os
+
+from dotenv import load_dotenv
+load_dotenv()  
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "57cb0ba9bb420e84236a7c57debbb056")
+SECRET_KEY = os.getenv("SECRET_KEY")
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
 
 # Quick-start development settings - unsuitable for production
